@@ -230,9 +230,8 @@ const GAME_PADDING = 24;
 
     // --- GESTION DES EFFETS SPÉCIAUX DU 404 ---
     let lastSpecialCheck = 0, nextSpecialDelay = 0;
-    let activeEffect = null;   // 'expand', 'speedBoost', 'invert'
+    let activeEffect = null;   // 'expand', 'speedBoost'
     let effectEndTime = 0;
-    let invertedControls = false;
 
     function tryTriggerSpecial(now) {
         if (!gameRunning || error404.isDead) return;
@@ -243,7 +242,7 @@ const GAME_PADDING = 24;
             return;
         }
         if (now - lastSpecialCheck >= nextSpecialDelay) {
-            const effects = ['expand', 'speedBoost', 'invert'];
+            const effects = ['expand', 'speedBoost'];
             activeEffect = effects[Math.floor(Math.random() * effects.length)];
             effectEndTime = now + 3000;
             switch(activeEffect) {
@@ -254,11 +253,6 @@ const GAME_PADDING = 24;
                 case 'speedBoost':
                     showMessage("⚡ 404 FULGURANT ⚡", 2000);
                     break;
-                // effet 'teleport' supprimé
-                case 'invert':
-                    invertedControls = true;
-                    showMessage("🔄 COMMANDES INVERSÉES 🔄", 2500);
-                    break;
             }
             nextSpecialDelay = 12000 + Math.random() * 8000;
             lastSpecialCheck = now;
@@ -268,7 +262,6 @@ const GAME_PADDING = 24;
     function updateSpecial(now) {
         if (activeEffect && now >= effectEndTime) {
             if (activeEffect === 'expand') error404.radius = error404.normalRadius;
-            if (activeEffect === 'invert') invertedControls = false;
             activeEffect = null;
             effectEndTime = 0;
         }
@@ -285,18 +278,8 @@ const GAME_PADDING = 24;
         // Appliquer la marge intérieure
         canvasX = Math.max(GAME_PADDING, Math.min(canvasX, width - GAME_PADDING));
         canvasY = Math.max(GAME_PADDING, Math.min(canvasY, height - GAME_PADDING));
-        if (invertedControls && activeEffect === 'invert') {
-            let dx = canvasX - unicorn.x, dy = canvasY - unicorn.y;
-            let dist = Math.hypot(dx, dy);
-            if (dist > 0.01) {
-                let move = 8;
-                unicorn.x -= (dx / dist) * move;
-                unicorn.y -= (dy / dist) * move;
-            }
-        } else {
-            unicorn.x = canvasX;
-            unicorn.y = canvasY;
-        }
+        unicorn.x = canvasX;
+        unicorn.y = canvasY;
         unicorn.x = Math.min(Math.max(unicorn.x, unicorn.radius + GAME_PADDING), width - unicorn.radius - GAME_PADDING);
         unicorn.y = Math.min(Math.max(unicorn.y, unicorn.radius + GAME_PADDING), height - unicorn.radius - GAME_PADDING);
     }
@@ -346,7 +329,7 @@ const GAME_PADDING = 24;
         error404.radius = error404.normalRadius;
         error404.isDead = false;
         protectedUntil = 0;
-        activeEffect = null; effectEndTime = 0; invertedControls = false;
+        activeEffect = null; effectEndTime = 0;
         score = 0;
         missiles = [];
         flames = [];
@@ -449,8 +432,9 @@ const GAME_PADDING = 24;
     function draw404() {
         if (error404.isDead) return;
         let intensity = (Math.sin(error404.blink)+1)/2;
-        let ex = Math.max(GAME_PADDING + error404.radius, Math.min(error404.x, width - GAME_PADDING - error404.radius));
-        let ey = Math.max(GAME_PADDING + error404.radius, Math.min(error404.y, height - GAME_PADDING - error404.radius));
+        // Pour la scie (expand), ne pas contraindre la position sinon elle est coupée
+        let ex = error404.x;
+        let ey = error404.y;
         ctx.save(); ctx.shadowBlur=18; ctx.shadowColor=`rgba(200,20,20,${0.7+intensity*0.3})`;
         let fontSize = Math.floor(error404.radius*1.6);
         ctx.font = `bold ${fontSize}px "Courier New", monospace`;
