@@ -111,7 +111,7 @@ const GAME_PADDING = 24;
                         break;
                     case 'shield':
                         protectedUntil = now + 5000;
-                        showMessage("🛡️ PROTECTION TOTALE CONTRE 404 (5s)", 2500);
+                        showMessage("🛡️ PROTECTION TOTALE (5s)", 2500);
                         break;
                     case 'clean':
                         flames = [];
@@ -166,6 +166,10 @@ const GAME_PADDING = 24;
 
             // Collision avec la licorne ?
             if (Math.hypot(unicorn.x - m.x, unicorn.y - m.y) < unicorn.radius + 15) {
+                if (protectedUntil > now) {
+                    missiles.splice(i,1); i--;
+                    continue;
+                }
                 if (m.symbol === '🧨') {
                     explosions.push({ x: unicorn.x, y: unicorn.y, endTime: now + EXPLOSION_DURATION });
                     flames.push({ x: unicorn.x, y: unicorn.y, radius: FLAME_RADIUS });
@@ -202,6 +206,7 @@ const GAME_PADDING = 24;
     function checkFlamesCollision() {
         for (let f of flames) {
             if (Math.hypot(unicorn.x - f.x, unicorn.y - f.y) < unicorn.radius + f.radius) {
+                if (protectedUntil > Date.now()) continue;
                 gameOver();
                 return true;
             }
@@ -213,8 +218,12 @@ const GAME_PADDING = 24;
     function update404Respawn(now) {
         if (error404.isDead && now >= error404.respawnTime) {
             error404.isDead = false;
-            error404.x = Math.random() * (width - 2 * error404.radius) + error404.radius;
-            error404.y = Math.min(Math.max(80, Math.random() * (height * 0.3) + 30), height - error404.radius);
+            let tries = 0;
+            do {
+                error404.x = Math.random() * (width - 2 * error404.radius) + error404.radius;
+                error404.y = Math.min(Math.max(80, Math.random() * (height * 0.3) + 30), height - error404.radius);
+                tries++;
+            } while (Math.hypot(unicorn.x - error404.x, unicorn.y - error404.y) < unicorn.radius + error404.radius + 40 && tries < 20);
             showMessage("☢️ 404 RÉAPPARAÎT", 1500);
         }
     }
